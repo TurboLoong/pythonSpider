@@ -10,7 +10,7 @@ import requests
 from bs4 import BeautifulSoup
 from requests.exceptions import RequestException
 
-from config import *
+from toutiao.config import *
 
 client = pymongo.MongoClient(MONGO_URL, connect=False)
 db = client[MONGO_DB]
