@@ -89,9 +89,9 @@ def OCR_lmj(img_path):
     # out.save('E://figures/img_gray.jpg')
 
     # 仅识别图片中的数字
-    text = pytesseract.image_to_string(out, config='digits')
+    # text = pytesseract.image_to_string(out, config='digits')
     # 识别图片中的数字和字母
-    # text = pytesseract.image_to_string(out)
+    text = pytesseract.image_to_string(out)
 
     # 去掉识别结果中的特殊字符
     exclude_char_list = ' .:\\|\'\"?![],()~@#$%^&*_+-={};<>/¥'
@@ -101,18 +101,21 @@ def OCR_lmj(img_path):
     return text
 
 
-def main():
+def parseCode():
     # 识别指定文件目录下的图片
     # 图片存放目录figures
-    dir = 'E:\\ocrimage'
-
+    dir = 'C:\\Users\\BBD\\Desktop\\temp\\'
     # 遍历figures下的png,jpg文件
     for file in os.listdir(dir):
         if file.endswith('.png') or file.endswith('.jpg'):
             image_path = '%s/%s' % (dir, file)  # 图片路径
+            # print(image_path)
             answer = file.split('.')[0]  # 图片名称，即图片中的正确文字
             recognizition = OCR_lmj(image_path)  # 图片识别的文字结果
             print((answer, recognizition))
 
+    # image_path = 'C:\Users\BBD\Desktop\temp\/code.jpg'  # print(OCR_lmj(image_path))
 
-main()
+
+if __name__ == '__main__':
+    parseCode()
