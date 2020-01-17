@@ -3,6 +3,8 @@ import re
 from time import sleep
 
 import pymongo
+import requests
+from config import *
 from pyquery import PyQuery as pq
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
@@ -10,66 +12,42 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from taobao.config import *
-
 client = pymongo.MongoClient(MONGO_URL)
 db = client[MONGO_DB]
 
 
 # 定义一个taobao类
-class taobao_infos:
+class tonghuashun_stock:
     # 对象初始化
     def __init__(self):
-        url = 'https://cn.bing.com/'
-        self.url = url
+        self.url = 'http://basic.10jqka.com.cn/{}/finance.html'
 
         options = webdriver.ChromeOptions()
         options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})  # 不加载图片,加快访问速度
         options.add_experimental_option('excludeSwitches',
                                         ['enable-automation'])  # 此步骤很重要，设置为开发者模式，防止被各大网站识别出来使用了Selenium
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
         self.browser = webdriver.Chrome(options=options)
         self.wait = WebDriverWait(self.browser, 10)  # 超时时长为10s
 
     # 登录淘宝
-    def login(self, weibo_username, weibo_password):
+    def main(self, stock):
+        stock = str(stock)
         try:
             # 打开网页
-            self.browser.get(self.url)
-
-            # 等待 密码登录选项 出现
-            password_login = self.wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, '.qrcode-login > .login-links > .forget-pwd')))
-            password_login.click()
-
-            # 等待 微博登录选项 出现
-            weibo_login = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.weibo-login')))
-            weibo_login.click()
-
-            # 等待 微博账号 出现
-            weibo_user = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.username > .W_input')))
-            weibo_user.send_keys(weibo_username)
-
-            # 等待 微博密码 出现
-            weibo_pwd = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.password > .W_input')))
-            weibo_pwd.send_keys(weibo_password)
-
-            # 等待 登录按钮 出现
-            submit = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.btn_tip > a > span')))
-            submit.click()
-
-            # 直到获取到淘宝会员昵称才能确定是登录成功
-            taobao_name = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,
-                                                                          '.site-nav-bd > ul.site-nav-bd-l > li#J_SiteNavLogin > div.site-nav-menu-hd > div.site-nav-user > a.site-nav-login-info-nick ')))
-            # 输出淘宝昵称
-            print(taobao_name.text + '登陆成功')
+            url = self.url.format(stock)
+            self.browser.get(url)
+            debt = self.wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '#cwzbDemo > div.sidenav > ul > li.current > a')))
+            debt.click()
+            simple = self.wait.until(EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '#cwzbTable > div.scroll_container > ul > li:nth-child(3) > a')))
+            simple.click()
+            html = self.browser.page_source
+            doc = pq(html)
+            items = doc('#cwzbTable .data_wraper > .tbody > tr ').items()
         except TimeoutException:
-            submit.click()
-            # 直到获取到淘宝会员昵称才能确定是登录成功
-            taobao_name = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,
-                                                                          '.site-nav-bd > ul.site-nav-bd-l > li#J_SiteNavLogin > div.site-nav-menu-hd > div.site-nav-user > a.site-nav-login-info-nick ')))
-            # 输出淘宝昵称
-            print(taobao_name.text + '登陆成功')
+            print(stock + '主页获取失败')
 
     def search(self, key_words):
         try:
@@ -93,23 +71,10 @@ class taobao_infos:
         except TimeoutException:
             self.search()
 
-    def next_page(self, page_num):
-        print('当前页' + str(page_num))
-        try:
-            input = self.wait.until(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > div.form > input')))
-            submit = self.wait.until(EC.presence_of_element_located(
-                (By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > div.form > span.btn.J_Submit')))
-            input.clear()
-            input.send_keys(page_num)
-            submit.click()
-            self.wait.until(EC.text_to_be_present_in_element(
-                (By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > ul > li.item.active > span'), str(page_num)))
-
-        except TimeoutException:
-            print('获取' + page_num + '页数据失败')
-            self.next_page(page_num)
+    def get_proxy(self):
+        res = requests.get('http://localhost:5555/get')
+        print('proxy', res.text)
+        return res.text
 
     def get_products(self):
         print('存储产品')
@@ -146,6 +111,6 @@ class taobao_infos:
 
 
 if __name__ == "__main__":
-    a = taobao_infos()
-    a.login("2312987772@qq.com", "Xyl2312987772")  # 登录
-    a.search('美食')
+    page = tonghuashun_stock()
+    page.main(601066)
+    # page.search('美食')
