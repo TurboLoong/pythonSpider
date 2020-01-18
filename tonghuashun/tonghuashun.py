@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import re
 from time import sleep
 
 import pymongo
@@ -16,7 +15,6 @@ client = pymongo.MongoClient(MONGO_URL)
 db = client[MONGO_DB]
 
 
-# 定义一个taobao类
 class tonghuashun_stock:
     # 对象初始化
     def __init__(self):
@@ -30,68 +28,46 @@ class tonghuashun_stock:
         self.browser = webdriver.Chrome(options=options)
         self.wait = WebDriverWait(self.browser, 10)  # 超时时长为10s
 
-    # 登录淘宝
     def main(self, stock):
         stock = str(stock)
         try:
             # 打开网页
             url = self.url.format(stock)
             self.browser.get(url)
+            # 点击资产负债表
             debt = self.wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, '#cwzbDemo > div.sidenav > ul > li.current > a')))
+                EC.presence_of_element_located((By.CSS_SELECTOR, '#cwzbDemo > div.sidenav > ul > li:nth-child(2) > a')))
             debt.click()
-            simple = self.wait.until(EC.presence_of_element_located(
-                (By.CSS_SELECTOR, '#cwzbTable > div.scroll_container > ul > li:nth-child(3) > a')))
-            simple.click()
-            html = self.browser.page_source
-            doc = pq(html)
-            items = doc('#cwzbTable .data_wraper > .tbody > tr ').items()
+
         except TimeoutException:
             print(stock + '主页获取失败')
-
-    def search(self, key_words):
-        try:
-            Input = self.wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "#q"))
-            )
-            submit = self.wait.until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, '#J_TSearchForm > div.search-button > button'))
-            )
-            Input.send_keys(key_words)
-            submit.click()
-            total_page = self.wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR,
-                                                '#mainsrp-pager > div > div > div > div.total'))).text
-
-            total = int(re.compile('(\d+)').search(total_page).group(1))
-            for i in range(2, total + 1):
-                self.get_products()
-                self.swipe_down(0.2)
-                self.next_page(i)
-        except TimeoutException:
-            self.search()
 
     def get_proxy(self):
         res = requests.get('http://localhost:5555/get')
         print('proxy', res.text)
         return res.text
 
-    def get_products(self):
-        print('存储产品')
-        self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '#mainsrp-itemlist .items .item')))
+    def get_debt(self):
+        # 等待资产负债表的数据出现
+        self.wait.until(EC.text_to_be_present_in_element(
+            (By.CSS_SELECTOR,
+             '#cwzbTable > .scroll_container > .table_data > .left_thead > .tbody > tbody > tr:nth-child(1) > th'),
+            '资产(元)'))
         html = self.browser.page_source
         doc = pq(html)
-        items = doc('#mainsrp-itemlist .items .item').items()
-        for item in items:
-            product = {
-                'image': item.find('.pic .img').attr('src'),
-                'price': item.find('.price').text(),
-                'deal': item.find('.deal-cnt').text()[:-3],
-                'title': item.find('.title').text(),
-                'location': item.find('.location').text(),
-                'shop': item.find('.shop').text()
-            }
-            self.save_to_mongo(product)
+        data_body = doc('.cwzb_table>.scroll_container>.table_data>.data_wraper>.data_tbody')
+        dates = [v.text() for v in data_body.find('.top_thead>tbody').eq(1).find('.td_w').items()]
+        keys = [v.text() for v in doc('.cwzb_table .table_data .left_thead>.tbody').find('tr:not(.unclick)>th').items()
+                if v.text()]
+        for index, date in enumerate(dates):
+            self.get_report(index + 1, date, keys, data_body)
+
+    def get_report(self, report, date, keys, father_body_ele):
+        datas = father_body_ele.find('.tbody tr td:nth-child({})'.format(report)).items()
+        datas = [v.text() for v in datas if v.text()]
+        result = {}
+        for index, item in enumerate(keys):
+            result[item] = datas[index]
 
     def swipe_down(self, second):
         for i in range(int(second / 0.1)):
@@ -113,4 +89,4 @@ class tonghuashun_stock:
 if __name__ == "__main__":
     page = tonghuashun_stock()
     page.main(601066)
-    # page.search('美食')
+    page.get_debt()
