@@ -60,15 +60,17 @@ class tonghuashun_stock:
         keys = [v.text() for v in doc('.cwzb_table .table_data .left_thead>.tbody').find('tr:not(.unclick)>th').items()
                 if v.text()]
         for index, date in enumerate(dates):
-            self.get_report(index + 1, date, keys, data_body)
+            self.get_by_report(index + 1, date, keys, data_body)
 
-    def get_report(self, report, date, keys, father_body_ele):
+    def get_by_report(self, report, date, keys, father_body_ele):
         datas = father_body_ele.find('.tbody tr td:nth-child({})'.format(report)).items()
         datas = [v.text() for v in datas if v.text()]
         result = {}
         for index, item in enumerate(keys):
             result[item] = datas[index]
 
+    def get_by_year(self):
+        print('year')
     def swipe_down(self, second):
         for i in range(int(second / 0.1)):
             js = 'var q = document.documentElement.scrollTop=' + str(300 + 200 * i)
@@ -78,7 +80,7 @@ class tonghuashun_stock:
         self.browser.execute_script(js)
         sleep(0.2)
 
-    def save_to_mongo(self, result):
+    def save_to_mysql(self, result):
         try:
             if db[MONGO_TABLE].insert_one(result):
                 print('存储成功')
