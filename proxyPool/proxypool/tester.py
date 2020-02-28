@@ -45,7 +45,6 @@ class Tester(object):
         测试主函数
         :return:
         """
-        print('测试器开始运行')
         try:
             count = self.redis.count()
             print('当前剩余', count, '个代理')

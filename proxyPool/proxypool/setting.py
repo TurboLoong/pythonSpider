@@ -20,9 +20,9 @@ VALID_STATUS_CODES = [200, 302]
 POOL_UPPER_THRESHOLD = 50000
 
 # 检查周期
-TESTER_CYCLE = 20
+TESTER_CYCLE = 50
 # 获取周期
-GETTER_CYCLE = 300
+GETTER_CYCLE = 200
 
 # 测试API，建议抓哪个网站测哪个
 TEST_URL = 'http://www.baidu.com'

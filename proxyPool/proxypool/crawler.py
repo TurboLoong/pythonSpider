@@ -25,7 +25,7 @@ class Crawler(object, metaclass=ProxyMetaclass):
             proxies.append(proxy)
         return proxies
 
-    def crawl_daili66(self, page_count=4):
+    def crawl_daili66(self, page_count=20):
         """
         获取代理66
         :param page_count: 页码
@@ -45,7 +45,7 @@ class Crawler(object, metaclass=ProxyMetaclass):
                     yield ':'.join([ip, port])
 
     def crawl_ip3366(self):
-        for page in range(1, 4):
+        for page in range(1, 10):
             start_url = 'http://www.ip3366.net/free/?stype=1&page={}'.format(page)
             html = get_page(start_url)
             ip_address = re.compile('<tr>\s*<td>(.*?)</td>\s*<td>(.*?)</td>')
@@ -56,7 +56,7 @@ class Crawler(object, metaclass=ProxyMetaclass):
                 yield result.replace(' ', '')
 
     def crawl_kuaidaili(self):
-        for i in range(1, 4):
+        for i in range(1, 30):
             start_url = 'http://www.kuaidaili.com/free/inha/{}/'.format(i)
             html = get_page(start_url)
             if html:
